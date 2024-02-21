@@ -1,74 +1,105 @@
-from queue import PriorityQueue
+import heapq
 
-# Função para calcular a heurística (número de peças fora do lugar)
-def heuristic(state, goal):
-    count = 0
-    for i in range(len(state)):
-        if state[i] != goal[i]:
-            count += 1
-    return count
-
-# Função para verificar se o estado é o objetivo
-def is_goal(state, goal):
-    return state == goal
-
-# Função para encontrar os movimentos possíveis
-def possible_moves(state):
-    moves = []
-    zero_index = state.index(0)
-    """
-    1 2 3
-    4 5 6
-    7 8 0
-    """
-    if zero_index not in [0, 1, 2]:  # Up
-        moves.append(-3)
-    if zero_index not in [0, 3, 6]:  # Left
-        moves.append(-1)
-    if zero_index not in [6, 7, 8]:  # Down
-        moves.append(3)
-    if zero_index not in [2, 5, 8]:  # Right
-        moves.append(1)
-    return moves
-
-# Função para realizar um movimento
-def move(state, direction):
-    new_state = state[:]
-    zero_index = new_state.index(0)
-    new_state[zero_index], new_state[zero_index + direction] = new_state[zero_index + direction], new_state[zero_index]
-    return new_state
-
-# Algoritmo de busca gulosa
-def greedy_search(start_state, goal_state):
-    visited = set()
-    priority_queue = PriorityQueue()
-    priority_queue.put((heuristic(start_state, goal_state), start_state))
+class PuzzleState:
+    def __init__(self, board, parent=None, move=None):
+        self.board = board
+        self.parent = parent
+        self.move = move
+        self.dimension = len(board)
+        self.goal_state = self.get_goal_state()
     
-    while not priority_queue.empty():
-        current_state = priority_queue.get()[1]
-        visited.add(tuple(current_state))
-        
-        if is_goal(current_state, goal_state):
-            return current_state
-        
-        for move_direction in possible_moves(current_state):
-            new_state = move(current_state, move_direction)
-            if tuple(new_state) not in visited:
-                priority_queue.put((heuristic(new_state, goal_state), new_state))
-            #print(new_state)
-
-        #print(visited)
+    def __lt__(self, other):
+        return self.heuristic() < other.heuristic()
     
-    return None
+    def __eq__(self, other):
+        return self.board == other.board
+    
+    def __hash__(self):
+        return hash(str(self.board))
+    
+    def get_goal_state(self):
+        goal_board = [[0] * self.dimension for _ in range(self.dimension)]
+        num = 1
+        for i in range(self.dimension):
+            for j in range(self.dimension):
+                goal_board[i][j] = num
+                num = (num + 1) % (self.dimension ** 2)
+        goal_board[self.dimension - 1][self.dimension - 1] = 0
+        return goal_board
+    
+    def find_blank_position(self):
+        for i in range(self.dimension):
+            for j in range(self.dimension):
+                if self.board[i][j] == 0:
+                    return i, j
+    
+    def heuristic(self):
+        # Heuristic function: Manhattan distance
+        distance = 0
+        for i in range(self.dimension):
+            for j in range(self.dimension):
+                if self.board[i][j] != 0:
+                    value = self.board[i][j] - 1
+                    goal_row = value // self.dimension
+                    goal_col = value % self.dimension
+                    distance += abs(i - goal_row) + abs(j - goal_col)
+        return distance
+    
+    def successors(self):
+        successors = []
+        row, col = self.find_blank_position()
+        moves = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+        for dr, dc in moves:
+            new_row, new_col = row + dr, col + dc
+            if 0 <= new_row < self.dimension and 0 <= new_col < self.dimension:
+                new_board = [row[:] for row in self.board]
+                new_board[row][col], new_board[new_row][new_col] = new_board[new_row][new_col], new_board[row][col]
+                successors.append(PuzzleState(new_board, parent=self, move=(new_row, new_col)))
+        return successors
+    
+    def is_goal_state(self):
+        return self.board == self.goal_state
 
-# Estado inicial e estado objetivo 
-start_state = [[2, 8, 3], [1, 6, 0], [4, 7, 5]]
-goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+def solve_puzzle(initial_state):
+    open_set = [initial_state]
+    closed_set = set()
+    
+    while open_set:
+        current_state = heapq.heappop(open_set)
+        if current_state.is_goal_state():
+            return construct_path(current_state), len(closed_set) + 1
+        closed_set.add(current_state)
+        successors = current_state.successors()
+        for successor in successors:
+            if successor not in closed_set:
+                heapq.heappush(open_set, successor)
+    return None, len(closed_set) + 1
 
-# Executar a busca gulosa
-result = greedy_search(start_state, goal_state)
+def construct_path(state):
+    path = []
+    while state:
+        path.append(state)
+        state = state.parent
+    return path[::-1]
 
-if result:
-    print("Solução encontrada:", result)
+# Configuração inicial
+initial_board = [
+    [2, 8, 3],
+    [1, 6, 0],
+    [4, 7, 5]
+]
+
+initial_state = PuzzleState(initial_board)
+
+# Resolver o puzzle
+path, num_moves = solve_puzzle(initial_state)
+
+if path:
+    print("Solução encontrada em {} movimentos:".format(num_moves))
+    for i, state in enumerate(path):
+        print("Movimento #{}:".format(i + 1))
+        for row in state.board:
+            print(row)
+        print()
 else:
-    print("Não foi possível encontrar uma solução.")
+    print("Não há solução para o puzzle.")
