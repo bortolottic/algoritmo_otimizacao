@@ -88,4 +88,4 @@ if __name__ == "__main__":
     elif jogo_inicial.avaliar_heuristica() < 0:
         print("Você perdeu!")
     else:
-        print("Empate!")    
+        print("Empate!")
