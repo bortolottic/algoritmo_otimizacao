@@ -8,7 +8,7 @@ from langchain import hub
 from langchain_community.tools import YouTubeSearchTool
 from langchain_community.vectorstores.neo4j_vector import Neo4jVector
 
-from load_variables import OPENAI_API_KEY
+from trabalho_final.load_variables import OPENAI_API_KEY
 
 llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY)
 embedding_provider = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)

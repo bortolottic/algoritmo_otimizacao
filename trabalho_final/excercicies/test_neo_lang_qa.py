@@ -3,7 +3,7 @@ from langchain_community.graphs import Neo4jGraph
 from langchain.chains import GraphCypherQAChain
 from langchain.prompts import PromptTemplate
 
-from load_variables import OPENAI_API_KEY, NEO4J_URL, NEO4J_USERNAME, NEO4J_PASSWORD
+from trabalho_final.load_variables import OPENAI_API_KEY, NEO4J_URL, NEO4J_USERNAME, NEO4J_PASSWORD
 
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY
